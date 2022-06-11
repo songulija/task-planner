@@ -119,37 +119,62 @@ import { v4 as uuidv4 } from 'uuid'
 export default {
   // async method executes before page loads.
   async asyncData() {
-    //lets get our board data before page load, and then after that await changes
-    // query firebase users collection by userId, checking if there is boards collection
-    let boardsRef = $nuxt.$fire.firestore
-      .collection('users')
-      .doc($nuxt.$fire.auth.currentUser.uid)
-      .collection('boards')
-    let boardData = []
-    await boardsRef
-      .get()
-      .then(function (querySnapshot) {
-        if (querySnapshot.docs.length > 0) {
-          try {
-            // lets loop through that collection of documents and add 
-            // documents to boardData array
-            for (const doc of querySnapshot.docs) {
-              let data = doc.data()
-              data.id = doc.id
-              boardData.push(data)
+      //get boards 
+      let boardData = []
+      const response=$nuxt.$fire.firestore.collection('users')
+      const data=await response.get();
+      data.docs.forEach(async(item)=> {
+        const uid = item.data().uid;
+        const userBoardsRef = $nuxt.$fire.firestore.
+          collection('users').doc(uid).
+          collection('boards');
+        await userBoardsRef
+          .get()
+          .then(function (querySnapshot) {
+            if (querySnapshot.docs.length > 0) {
+              try {
+                // lets loop through that collection of documents and add 
+                // documents to boardData array
+                for (const doc of querySnapshot.docs) {
+                  let data = doc.data()
+                  console.log(data);
+                  if(uid == $nuxt.$fire.auth.currentUser.uid) {
+                    console.log('this is my board:' + data.title)
+                    boardData.push(data);
+                  } else {
+                    if(data.users){
+                      console.log('this is not my board AND it DOES have users:'+data.title)
+                      const index = data.users.findIndex(x => x.email === $nuxt.$fire.auth.currentUser.email);
+                      if(index !== -1) {
+                        boardData.push(data);
+                      }
+                    }
+                    // if(data.users.length > 0) {
+                    //   const index = data.users.findIndex(x => x.email === $nuxt.$fire.auth.currentUser.email);
+                    //   if(index !== -1) {
+                    //     console.log('this is NOT my board by its SHARED with me:' + data.title)
+                    //     boardData.push(data);
+                    //   }
+                    // }
+                    
+                  }
+                }
+              } catch (err) {}
             }
-          } catch (err) {}
-        }
+          })
+          .catch(function (error) {})        
       })
-      .catch(function (error) {})
+
     return { boards: boardData }
   },
+  
   data() {
     return {
       enableColor: false,
       dialog: false,
       valid: false,
       board: {
+        id: '',
         title: '',
         color: '',
         image: {
@@ -165,24 +190,24 @@ export default {
       fileToUpload: {},
     }
   },
-  created() {
-    //lets watch our boards just to give it that realtime feel when we add or remove boards.
-    let that = this
-    $nuxt.$fire.firestore
-      .collection(`users/${$nuxt.$fire.auth.currentUser.uid}/boards/`)
-      .onSnapshot(function (querySnapshot) {
-        if (querySnapshot.docs.length > 0) {
-          that.boards = []
-          try {
-            for (const doc of querySnapshot.docs) {
-              let data = doc.data()
-              data.id = doc.id
-              that.boards.push(data)
-            }
-          } catch (err) {}
-        }
-      })
-  },
+  // created() {
+  //   //lets watch our boards just to give it that realtime feel when we add or remove boards.
+  //   let that = this
+  //   $nuxt.$fire.firestore
+  //     .collection(`users/${$nuxt.$fire.auth.currentUser.uid}/boards/`)
+  //     .onSnapshot(function (querySnapshot) {
+  //       if (querySnapshot.docs.length > 0) {
+  //         that.boards = []
+  //         try {
+  //           for (const doc of querySnapshot.docs) {
+  //             let data = doc.data()
+  //             data.id = doc.id
+  //             that.boards.push(data)
+  //           }
+  //         } catch (err) {}
+  //       }
+  //     })
+  // },
   methods: {
     addBoard() {
       //lets create a temp id we can use to save our doc and our storage files
@@ -195,6 +220,7 @@ export default {
       if (this.$refs.form.validate()) {
         //Let's give our board a created date.
         this.board.dateCreated = Date.now()
+        this.board.id = this.currentImageId
         // using firebase module. query through users collection storing documne in users collection with userid
         // if it not exist. then query through boards collection looking for document with custom currentImageId
         // setting document to board object

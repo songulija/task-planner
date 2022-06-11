@@ -75,7 +75,8 @@ export default {
         that.snackbar = true
       }).then((user) => {
           const userObj = {
-            email: user.user.email
+            email: user.user.email,
+            uid: user.user.uid
           }
           this.$fire.firestore
             .collection('users')

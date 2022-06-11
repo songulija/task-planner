@@ -267,15 +267,43 @@
           </v-card-title>
           <v-card-text>
             <v-container>
-              <v-row>
-                <v-col cols="12">
-                  <v-text-field
-                    label="Add user email"
-                    v-model="user.email"
-                    required
-                  ></v-text-field>
-                </v-col>
-              </v-row>
+              <v-autocomplete
+              v-model="board.users"
+              :items="users"
+              filled
+              chips
+              color="blue-grey lighten-2"
+              label="Select"
+              item-text="name"
+              item-value="name"
+              multiple
+            >
+              <template v-slot:selection="data">
+                <v-chip
+                  v-bind="data.attrs"
+                  :input-value="data.selected"
+                  @click="data.select"
+                >
+                  <v-avatar left>
+                    <v-img :src="data.item.avatar"></v-img>
+                  </v-avatar>
+                  {{ data.item.email }}
+                </v-chip>
+              </template>
+              <template v-slot:item="data">
+                <template v-if="typeof data.item !== 'object'">
+                  <v-list-item-content v-text="data.item"></v-list-item-content>
+                </template>
+                <template v-else>
+                  <v-list-item-avatar>
+                    <img :src="data.item.avatar">
+                  </v-list-item-avatar>
+                  <v-list-item-content>
+                    <v-list-item-title v-html="data.item.email"></v-list-item-title>
+                  </v-list-item-content>
+                </template>
+              </template>
+            </v-autocomplete>
             </v-container>
           </v-card-text>
           <v-card-actions>
@@ -283,7 +311,7 @@
             <v-btn color="blue darken-1" text @click="dialogShareBoard = false">
               Close
             </v-btn>
-            <v-btn color="blue darken-1" text @click="addUserToBoard()">
+            <v-btn color="blue darken-1" text @click="addUsersToBoard()">
               Save
             </v-btn>
           </v-card-actions>
@@ -302,6 +330,7 @@ export default {
   layout: 'board',
   data() {
     return {
+      boardUsers: [],
       listId: '',
       list: {
         title: '',
@@ -341,14 +370,23 @@ export default {
           //assigning document data to "boardData"
           boardData = doc.data()
           boardData.id = params.id
+          if(!boardData.users) {
+            boardData.users = []
+          }
         }
       })
       .catch(function (error) {})
-    // if (boardData.color != '' || boardData.image.downloadURL != '') {
-    //   $nuxt.$emit('toggle-alt-topbar')
-    // }
-    // so i could access it anywhere
-    return { board: boardData }
+
+    const response=$nuxt.$fire.firestore.collection('users')
+    const data=await response.get();
+    const users = [];
+    data.docs.forEach(item=>{
+      const obj = {
+        email: item.data().email
+      }
+     users.push(obj);
+    })
+    return { board: boardData, users: users }
   },
   created() {
     //   once page is created. 
@@ -368,19 +406,16 @@ export default {
       })
   },
   methods: {
-    addUserToBoard() {
-      let that = this
-      // let that = this
+    async addUsersToBoard() {
       // that.dialog = false
-      if(that.user.email != '') {
-        this.$fire.auth.getUserByEmail(that.user.email)
-          .then(function(userRecord) {
-            // See the UserRecord reference doc for the contents of userRecord.
-            console.log('Successfully fetched user data:', userRecord.toJSON());
-          })
-          .catch(function(error) {
-            console.log('Error fetching user data:', error);
-          });
+      if(this.board.users) {
+        const array = this.board.users.map(x => {
+          return {
+            email: x.email
+          }
+        })
+        this.board.users = array;
+        await this.updateBoard()
       }
     },
     async createList() {
