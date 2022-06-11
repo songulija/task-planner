@@ -43,7 +43,7 @@
               <template
                 v-if="!fileToUpload.progress || fileToUpload.progress == 0"
               >
-                <v-icon>mdi-camera</v-icon>
+                <v-icon>mdi-cazmera</v-icon>
                 <p>Add a board background</p>
                 <input
                   type="file"
@@ -266,7 +266,6 @@ export default {
           owner: this.$fire.auth.currentUser.uid,
         },
       }
-
       // Action upload. uploading file to "storage"
       const task = itemRef.put(this.fileToUpload.file, itemMeta)
 

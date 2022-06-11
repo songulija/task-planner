@@ -2,7 +2,7 @@
   <v-row align="center" justify="center">
     <v-col cols="12" sm="8" md="4" align="center">
       <v-card class="elevation-4 text-left" >
-        <v-card-title class="fancy-title align-center justify-center">Login</v-card-title><v-card-text>
+        <v-card-title class="fancy-title align-center justify-center">Registration</v-card-title><v-card-text>
           <v-form>
           <!-- assigned text field value to state values of component -->
             <v-text-field
@@ -28,12 +28,12 @@
             @click="login"
             depressed
             large
-            >Login</v-btn
+            >Register</v-btn
           >
         </v-card-actions>
         <div class="d-flex" style="marginLeft: 10px;">
           
-            <p>Don’t have an account?<nuxt-link to="/auth/signup"><b>Sign Up</b></nuxt-link></p>
+            <p>Already have an account?<nuxt-link to="/auth/signin"><b>Sign In</b></nuxt-link></p>
           
         </div>
       </v-card>
@@ -53,7 +53,7 @@
 
 <script>
 export default {
-  layout: 'signin',
+  layout: 'signup',
   data() {
     return {
       snackbar: false,
