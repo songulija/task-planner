@@ -18,7 +18,18 @@
               <h3 class="logo">Jello</h3>
             </v-row>
           </nuxt-link>
-          <v-icon small @click="deleteBoard()">mdi-delete-outline</v-icon>
+          <div class="d-flex justify-space-between">
+            <v-btn
+              depressed
+              @click="
+                dialogShareBoard = true
+              "
+              class="mt-auto"
+              >Add User</v-btn
+            >
+            <v-icon big @click="deleteBoard()">mdi-delete-outline</v-icon>
+          </div>
+         
         </div>
       </v-container>
       <v-navigation-drawer
@@ -247,6 +258,37 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <!-- invite people to board -->
+      <v-dialog v-model="dialogShareBoard" persistent max-width="600px">
+        <v-card elevation="0">
+          <v-card-title>
+            <span class="headline">Share</span>
+          </v-card-title>
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col cols="12">
+                  <v-text-field
+                    label="Add user email"
+                    v-model="user.email"
+                    required
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="blue darken-1" text @click="dialogShareBoard = false">
+              Close
+            </v-btn>
+            <v-btn color="blue darken-1" text @click="addUserToBoard()">
+              Save
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </div>
   </div>
 </template>
@@ -270,12 +312,16 @@ export default {
         startDate: moment().format('YYYY/MM/DD'),
         endDate: moment().add(1, 'days').format('YYYY/MM/DD')
       },
+      user: {
+        email: ''
+      },
       currentCard: {},
       cardDraggedId: '',
       cardDraggedListId: '',
       dialog: false,
       dialogCard: false,
       dialogEditCard: false,
+      dialogShareBoard: false,
       drawer: false,
     }
   },
@@ -322,6 +368,21 @@ export default {
       })
   },
   methods: {
+    addUserToBoard() {
+      let that = this
+      // let that = this
+      // that.dialog = false
+      if(that.user.email != '') {
+        this.$fire.auth.getUserByEmail(that.user.email)
+          .then(function(userRecord) {
+            // See the UserRecord reference doc for the contents of userRecord.
+            console.log('Successfully fetched user data:', userRecord.toJSON());
+          })
+          .catch(function(error) {
+            console.log('Error fetching user data:', error);
+          });
+      }
+    },
     async createList() {
       let that = this
       that.dialog = false

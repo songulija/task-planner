@@ -6,8 +6,8 @@
           <v-form>
           <!-- assigned text field value to state values of component -->
             <v-text-field
-              label="Login"
-              name="login"
+              label="Register"
+              name="register"
               prepend-icon="mdi-account"
               type="text"
               v-model="auth.email"
@@ -24,8 +24,8 @@
         </v-card-text>
         <v-card-actions class="text-center">
           <v-btn
-            class="login-button"
-            @click="login"
+            class="register-button"
+            @click="register"
             depressed
             large
             >Register</v-btn
@@ -37,7 +37,7 @@
           
         </div>
       </v-card>
-      <!-- display messages if login failed or success in snackbar -->
+      <!-- display messages if register failed or success in snackbar -->
       <v-snackbar
         :timeout="4000"
         v-model="snackbar"
@@ -65,16 +65,24 @@ export default {
     }
   },
   methods: {
-    login() {
-      //login using firebase. 
+    register() {
+      //register using firebase. 
       let that = this
-      this.$fire.auth.signInWithEmailAndPassword(this.auth.email, this.auth.password)
+      this.$fire.auth.createUserWithEmailAndPassword(this.auth.email, this.auth.password)
       .catch(function (error){
         // if error display message in snackBar
         that.snackbarText = error.message
         that.snackbar = true
       }).then((user) => {
-        //we are signed in
+          const userObj = {
+            email: user.user.email
+          }
+          this.$fire.firestore
+            .collection('users')
+            .doc(user.user.uid)
+            .set(userObj)
+            .catch(function (error) {})
+        //we are registered in
         $nuxt.$router.push('/')
       })
     }
