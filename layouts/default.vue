@@ -57,6 +57,12 @@
                     </nuxt-link>
                   </div>
                   <div class="d-flex">
+                  <!-- icons wrappen in nuxt links -->
+                    <nuxt-link to="/sharedBoards">
+                      <v-icon>mdi-view-dashboard-variant-outline</v-icon>&nbsp;&nbsp;<b>Shared Boards</b>
+                    </nuxt-link>
+                  </div>
+                  <div class="d-flex">
                     <nuxt-link to="/auth/signout">
                       <v-icon>mdi-exit-to-app</v-icon>&nbsp;&nbsp;<b>Sign out</b>
                     </nuxt-link>
