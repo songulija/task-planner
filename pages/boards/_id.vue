@@ -15,7 +15,7 @@
           <v-icon @click="drawer = true">mdi-menu</v-icon>
           <nuxt-link to="/">
             <v-row no-gutters align="center" justify="space-between">
-              <h3 class="logo">Jello</h3>
+              <h3 class="logo">Tasker</h3>
             </v-row>
           </nuxt-link>
           <div class="d-flex justify-space-between">
@@ -61,6 +61,12 @@
               <nuxt-link to="/">
                 <v-icon>mdi-view-dashboard-variant-outline</v-icon
                 >&nbsp;&nbsp;<b>My Boards</b>
+              </nuxt-link>
+            </div>
+             <div class="d-flex">
+              <nuxt-link to="/sharedBoards">
+                <v-icon>mdi-view-dashboard-variant-outline</v-icon
+                >&nbsp;&nbsp;<b>Shared Boards</b>
               </nuxt-link>
             </div>
             <div class="d-flex">
@@ -287,7 +293,7 @@
                   <v-avatar left>
                     <v-img :src="data.item.avatar"></v-img>
                   </v-avatar>
-                  {{ data.item.email }}
+                  {{ data.item }}
                 </v-chip>
               </template>
               <template v-slot:item="data">
@@ -299,7 +305,7 @@
                     <img :src="data.item.avatar">
                   </v-list-item-avatar>
                   <v-list-item-content>
-                    <v-list-item-title v-html="data.item.email"></v-list-item-title>
+                    <v-list-item-title v-html="data.item"></v-list-item-title>
                   </v-list-item-content>
                 </template>
               </template>
@@ -341,9 +347,6 @@ export default {
         startDate: moment().format('YYYY/MM/DD'),
         endDate: moment().add(1, 'days').format('YYYY/MM/DD')
       },
-      user: {
-        email: ''
-      },
       currentCard: {},
       cardDraggedId: '',
       cardDraggedListId: '',
@@ -358,8 +361,6 @@ export default {
     //lets get our board data before page load, and then after that await changes
     //getting document from boards collection by id from url
     let boardRef = $nuxt.$fire.firestore
-      .collection('users')
-      .doc($nuxt.$fire.auth.currentUser.uid)
       .collection('boards')
       .doc(params.id)
     let boardData = {}
@@ -381,10 +382,10 @@ export default {
     const data=await response.get();
     const users = [];
     data.docs.forEach(item=>{
-      const obj = {
-        email: item.data().email
+      const email = item.data().email;
+      if(email != $nuxt.$fire.auth.currentUser.email) {
+        users.push(item.data().email);
       }
-     users.push(obj);
     })
     return { board: boardData, users: users }
   },
@@ -394,8 +395,6 @@ export default {
     let tempId = this.board.id
     //onSnapshot means if we make any board update it will update state imediately
     let boardRef = $nuxt. $fire.firestore
-      .collection('users')
-      .doc($nuxt.$fire.auth.currentUser.uid)
       .collection('boards')
       .doc(tempId)
       .onSnapshot((doc) => {
@@ -409,14 +408,9 @@ export default {
     async addUsersToBoard() {
       // that.dialog = false
       if(this.board.users) {
-        const array = this.board.users.map(x => {
-          return {
-            email: x.email
-          }
-        })
-        this.board.users = array;
         await this.updateBoard()
       }
+      this.dialogShareBoard = false;
     },
     async createList() {
       let that = this
@@ -593,8 +587,6 @@ export default {
       let that = this
       try {
         await that.$fire.firestore
-        .collection('users')
-        .doc(that.$fire.auth.currentUser.uid)
         .collection('boards')
         .doc(that.board.id).delete().then(() => {
           $nuxt.$router.push('/')
@@ -610,8 +602,6 @@ export default {
     //   that need to be updated
       let that = this
       await that.$fire.firestore
-        .collection('users')
-        .doc(that.$fire.auth.currentUser.uid)
         .collection('boards')
         .doc(that.board.id)
         .update(that.board, { merge: true })

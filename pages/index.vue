@@ -123,9 +123,8 @@ export default {
       //lets get our board data before page load, and then after that await changes
     // query firebase users collection by userId, checking if there is boards collection
     let boardsRef = $nuxt.$fire.firestore
-      .collection('users')
-      .doc($nuxt.$fire.auth.currentUser.uid)
       .collection('boards')
+      .where('userId', '==', $nuxt.$fire.auth.currentUser.uid)
     let boardData = []
     await boardsRef
       .get()
@@ -156,6 +155,7 @@ export default {
         id: '',
         title: '',
         color: '',
+        userId: '',
         image: {
           name: '',
           originalName: '',
@@ -173,7 +173,8 @@ export default {
     //lets watch our boards just to give it that realtime feel when we add or remove boards.
     let that = this
     $nuxt.$fire.firestore
-      .collection(`users/${$nuxt.$fire.auth.currentUser.uid}/boards/`)
+      .collection('boards')
+      .where('userId', '==', $nuxt.$fire.auth.currentUser.uid)
       .onSnapshot(function (querySnapshot) {
         if (querySnapshot.docs.length > 0) {
           that.boards = []
@@ -200,25 +201,21 @@ export default {
         //Let's give our board a created date.
         this.board.dateCreated = Date.now()
         this.board.id = this.currentImageId
-        let currentBoards = this.boards;
+        this.board.userId = $nuxt.$fire.auth.currentUser.uid
         // using firebase module. query through users collection storing documne in users collection with userid
         // if it not exist. then query through boards collection looking for document with custom currentImageId
         // setting document to board object
         this.$fire.firestore
-          .collection('users')
-          .doc(this.$fire.auth.currentUser.uid)
           .collection('boards')
           .doc(this.currentImageId)
           .set(this.board)
           .then(function (docRef) {
-            currentBoards.push(this.board)
-            this.boards = currentBoards
-            that.dialog = false
             that.$refs.form.reset()
             that.snackbarText = 'Successfully created your board'
             that.snackbar = true
           })
           .catch(function (error) {})
+          this.dialog = false
       }
     },
     

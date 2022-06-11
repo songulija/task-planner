@@ -13,12 +13,12 @@
       <v-container fluid class="jello-topbar">
         <div class="d-flex justify-space-between">
           <v-icon @click="drawer = true">mdi-menu</v-icon>
-          <nuxt-link to="/">
+          <nuxt-link to="/sharedBoards">
             <v-row no-gutters align="center" justify="space-between">
-              <h3 class="logo">Jello</h3>
+              <h3 class="logo">Tasker</h3>
             </v-row>
           </nuxt-link>
-          <div class="d-flex justify-space-between">
+          <!-- <div class="d-flex justify-space-between">
             <v-btn
               depressed
               @click="
@@ -28,7 +28,7 @@
               >Add User</v-btn
             >
             <v-icon big @click="deleteBoard()">mdi-delete-outline</v-icon>
-          </div>
+          </div> -->
          
         </div>
       </v-container>
@@ -63,6 +63,12 @@
                 >&nbsp;&nbsp;<b>My Boards</b>
               </nuxt-link>
             </div>
+             <div class="d-flex">
+              <nuxt-link to="/sharedBoards">
+                <v-icon>mdi-view-dashboard-variant-outline</v-icon
+                >&nbsp;&nbsp;<b>Shared Boards</b>
+              </nuxt-link>
+            </div>
             <div class="d-flex">
               <nuxt-link to="/auth/signout">
                 <v-icon>mdi-exit-to-app</v-icon>&nbsp;&nbsp;<b>Sign out</b>
@@ -85,10 +91,10 @@
         class="d-flex flex-column pt-3 mr-6 list"
         v-bind:key="list.id"
       >
-      <div class="d-flex flex-row justify-space-between">
+      <!-- <div class="d-flex flex-row justify-space-between">
         <h4>{{ list.title }}</h4>
         <v-icon small @click="deleteList(list.id)">mdi-delete-outline</v-icon>
-      </div>
+      </div> -->
 
       <!--display cards in that container-->
       <!-- making card draggable -->
@@ -246,72 +252,13 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn color="red darken-1" text @click="deleteCard()">
+            <!-- <v-btn color="red darken-1" text @click="deleteCard()">
               Delete
-            </v-btn>
+            </v-btn> -->
             <v-btn color="blue darken-1" text @click="dialogEditCard = false">
               Close
             </v-btn>
             <v-btn color="blue darken-1" text @click="updateCard()">
-              Save
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-
-      <!-- invite people to board -->
-      <v-dialog v-model="dialogShareBoard" persistent max-width="600px">
-        <v-card elevation="0">
-          <v-card-title>
-            <span class="headline">Share</span>
-          </v-card-title>
-          <v-card-text>
-            <v-container>
-              <v-autocomplete
-              v-model="board.users"
-              :items="users"
-              filled
-              chips
-              color="blue-grey lighten-2"
-              label="Select"
-              item-text="name"
-              item-value="name"
-              multiple
-            >
-              <template v-slot:selection="data">
-                <v-chip
-                  v-bind="data.attrs"
-                  :input-value="data.selected"
-                  @click="data.select"
-                >
-                  <v-avatar left>
-                    <v-img :src="data.item.avatar"></v-img>
-                  </v-avatar>
-                  {{ data.item.email }}
-                </v-chip>
-              </template>
-              <template v-slot:item="data">
-                <template v-if="typeof data.item !== 'object'">
-                  <v-list-item-content v-text="data.item"></v-list-item-content>
-                </template>
-                <template v-else>
-                  <v-list-item-avatar>
-                    <img :src="data.item.avatar">
-                  </v-list-item-avatar>
-                  <v-list-item-content>
-                    <v-list-item-title v-html="data.item.email"></v-list-item-title>
-                  </v-list-item-content>
-                </template>
-              </template>
-            </v-autocomplete>
-            </v-container>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn color="blue darken-1" text @click="dialogShareBoard = false">
-              Close
-            </v-btn>
-            <v-btn color="blue darken-1" text @click="addUsersToBoard()">
               Save
             </v-btn>
           </v-card-actions>
@@ -327,7 +274,7 @@ import { v4 as uuidv4 } from 'uuid'
 import moment from 'moment'
 
 export default {
-  layout: 'board',
+  layout: 'shared',
   data() {
     return {
       boardUsers: [],
@@ -340,9 +287,6 @@ export default {
         description: '',
         startDate: moment().format('YYYY/MM/DD'),
         endDate: moment().add(1, 'days').format('YYYY/MM/DD')
-      },
-      user: {
-        email: ''
       },
       currentCard: {},
       cardDraggedId: '',
@@ -358,8 +302,6 @@ export default {
     //lets get our board data before page load, and then after that await changes
     //getting document from boards collection by id from url
     let boardRef = $nuxt.$fire.firestore
-      .collection('users')
-      .doc($nuxt.$fire.auth.currentUser.uid)
       .collection('boards')
       .doc(params.id)
     let boardData = {}
@@ -381,10 +323,10 @@ export default {
     const data=await response.get();
     const users = [];
     data.docs.forEach(item=>{
-      const obj = {
-        email: item.data().email
+      const email = item.data().email;
+      if(email != $nuxt.$fire.auth.currentUser.email) {
+        users.push(item.data().email);
       }
-     users.push(obj);
     })
     return { board: boardData, users: users }
   },
@@ -394,8 +336,6 @@ export default {
     let tempId = this.board.id
     //onSnapshot means if we make any board update it will update state imediately
     let boardRef = $nuxt. $fire.firestore
-      .collection('users')
-      .doc($nuxt.$fire.auth.currentUser.uid)
       .collection('boards')
       .doc(tempId)
       .onSnapshot((doc) => {
@@ -406,18 +346,6 @@ export default {
       })
   },
   methods: {
-    async addUsersToBoard() {
-      // that.dialog = false
-      if(this.board.users) {
-        const array = this.board.users.map(x => {
-          return {
-            email: x.email
-          }
-        })
-        this.board.users = array;
-        await this.updateBoard()
-      }
-    },
     async createList() {
       let that = this
       that.dialog = false
@@ -488,23 +416,6 @@ export default {
       ev.preventDefault()
       this.updateCardList(listId)
     },
-    async deleteList(listId){
-      let that = this
-      let index = -1
-      let count = 0
-      for (const list of that.board.lists) {
-        //   storing index of that list
-        if(list.id == listId) {
-          index = count
-        }
-        count++
-      }
-    //   removing list from board lists localy. then call updateBoard which will update whole board
-      if(index > -1) {
-        that.board.lists.splice(index, 1)
-        await that.updateBoard()
-      }
-    },
     async createCard(){
        let that = this
       that.dialogCard = false
@@ -560,58 +471,11 @@ export default {
       }
       await that.updateBoard()
     },
-    async deleteCard() {
-      let that = this
-      that.dialogEditCard = false
-      let i = 0
-      let j = 0
-      let index = {
-        list: -1,
-        card: -1,
-      }
-      //looping throug lists by list.id, then looping through that found list cards by currentCard id. saving list and card indexes
-      for (const list of that.board.lists) {
-        if (that.currentCard.listId === list.id) {
-          //correct list, now find card
-          for (const card of list.cards) {
-            if (card.id === that.currentCard.id) {
-              index.list = i
-              index.card = j
-            }
-            j++
-          }
-        }
-        i++
-      }
-        //removing card from local state. then saving, that will update whole board obj
-      if (index.list > -1) {
-        that.board.lists[index.list].cards.splice(index.card, 1)
-        await that.updateBoard()
-      }
-    },
-    async deleteBoard() {
-      let that = this
-      try {
-        await that.$fire.firestore
-        .collection('users')
-        .doc(that.$fire.auth.currentUser.uid)
-        .collection('boards')
-        .doc(that.board.id).delete().then(() => {
-          $nuxt.$router.push('/')
-        }).catch(() => {
-          
-        })
-      } catch (error) {
-        $nuxt.$router.push('/')
-      }
-    },
     async updateBoard() {
     //   update our board and save it to database. merge property will check fields
     //   that need to be updated
       let that = this
       await that.$fire.firestore
-        .collection('users')
-        .doc(that.$fire.auth.currentUser.uid)
         .collection('boards')
         .doc(that.board.id)
         .update(that.board, { merge: true })
